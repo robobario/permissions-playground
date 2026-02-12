@@ -1,0 +1,40 @@
+name: Verify PR Number File
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-pr-file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Verify File Content
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+          TARGET_FILE: "pr_id.txt" # Change this to your preferred filename
+        run: |
+          echo "Expected PR Number: $PR_NUMBER"
+          
+          # 1. Check if the file exists in the root
+          if [ ! -f "$TARGET_FILE" ]; then
+            echo "::error::File '$TARGET_FILE' is missing from the root directory."
+            exit 1
+          fi
+
+          # 2. Read the file content (xargs trims trailing whitespace/newlines)
+          CONTENT=$(cat "$TARGET_FILE" | xargs)
+          
+          echo "Found content: $CONTENT"
+
+          # 3. Compare content with the PR number
+          if [ "$CONTENT" == "$PR_NUMBER" ]; then
+            echo "✅ Success: File content matches the PR number."
+            exit 0
+          else
+            echo "::error::Validation Failed: File contained '$CONTENT', but expected '$PR_NUMBER'."
+            exit 1
+          fi
